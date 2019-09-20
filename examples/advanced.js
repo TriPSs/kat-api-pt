@@ -7,10 +7,10 @@ const kat = new KatApi()
 
 // Advanced search
 kat.search({
-  query: 'westworld',
-  category: 'tv_other',
-  sortBy: 'seeders',
-  orderBy: 'desc',
-  language: 'english'
+  page: 1,
+  language: 'en',
+  verified: 1,
+  category: 'tv',
+  subcate: 'hd',
 }).then(res => console.log(res))
   .catch(err => console.error(err))

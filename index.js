@@ -1,4 +1,3 @@
-// Import the necessary modules.
 const bytes = require('bytes')
 const cheerio = require('cheerio')
 const debug = require('debug')
@@ -44,94 +43,27 @@ module.exports = class KatApi {
    * @param {!string} baseUrl=https://katcr.co/ - The base url of katcr.
    * @type {String}
    */
-  constructor({baseUrl = 'https://katcr.co/'} = {}) {
+  constructor({ baseUrl = 'https://katcr.co/' } = {}) {
     /**
-      * The base url of katcr.
-      * @type {string}
-      */
+     * The base url of katcr.
+     * @type {string}
+     */
     this._baseUrl = baseUrl
     /**
-      * Show extra output.
-      * @type {Function}
-      */
+     * Show extra output.
+     * @type {Function}
+     */
     this._debug = debug(name)
     /**
      * The available categories to search for.
      * @type {Object}
      */
     this._category = {
-      anime_english_translated: 118,
-      anime_other: 133,
-      applications_handheld: 144,
-      applications_windows: 139,
-      applications_mac: 140,
-      applications_linux: 142,
-      applications_other: 131,
-      books_children: 102,
-      books_comics: 103,
-      books_manga: 104,
-      books_magazines: 105,
-      books_textbooks: 106,
-      books_fiction: 107,
-      books_non_fiction: 108,
-      books_audio_books: 109,
-      books_biography: 110,
-      books_religion: 111,
-      books_history: 112,
-      books_computers_technology: 113,
-      books_educational: 114,
-      books_cooking: 115,
-      books_sport: 116,
-      books_other: 132,
-      games_windows: 85,
-      games_linux: 87,
-      games_xbox: 90,
-      games_wii: 91,
-      games_handheld: 92,
-      games_playstation: 97,
-      games_other: 130,
-      movies_3d_movies: 69,
-      movies_hd: 71,
-      movies_screener: 74,
-      movies_ultrahd: 75,
-      movies_dubbed_movies: 78,
-      movies_asian_bollywood: 79,
-      movies_animation: 80,
-      movies_documentary: 81,
-      movies_other: 128,
-      movies_blu_ray_iso: 148,
-      movies_cam: 149,
-      movies_dvd_iso: 150,
-      music_mp3: 22,
-      music_lossless: 23,
-      music_radio_shows: 26,
-      music_aac: 64,
-      music_transcode: 65,
-      music_soundtrack: 66,
-      music_karaoke: 67,
-      music_videos_concerts: 68,
-      music_other: 129,
-      other_subtitles: 134,
-      other_pictures: 136,
-      other_other: 138,
-      other_tutorials: 145,
-      other_wordpress: 153,
-      other_dazposer: 154,
-      tv_dvd_iso: 5,
-      tv_blu_ray_iso: 6,
-      tv_hd: 41,
-      tv_documentary: 7,
-      tv_sport: 146,
-      tv_other: 151,
-      tv_ultra_hd: 152,
-      xxx_videos: 119,
-      xxx_hd: 155,
-      xxx_ultrahd: 121,
-      xxx_pictures: 122,
-      xxx_magazines: 123,
-      xxx_books: 124,
-      xxx_hentai: 125,
-      xxx_xxx_games: 126
+      movies: 'movies',
+      tv: 'tv',
+    }
+    this._subcate = {
+      hd: 'hd',
     }
     /**
      * The available languages to search for.
@@ -155,7 +87,7 @@ module.exports = class KatApi {
       tamil: 16,
       telegu: 17,
       turkish: 18,
-      unknown: 8
+      unknown: 8,
     }
     /**
      * The available ways to sort the results by.
@@ -168,7 +100,7 @@ module.exports = class KatApi {
       size: 'size',
       completed: 'times_completed',
       seeders: 'seeders',
-      leechers: 'leechers'
+      leechers: 'leechers',
     }
     /**
      * The available ways to order the results by.
@@ -176,7 +108,7 @@ module.exports = class KatApi {
      */
     this._order = {
       asc: 'asc',
-      desc: 'desc'
+      desc: 'desc',
     }
   }
 
@@ -191,39 +123,57 @@ module.exports = class KatApi {
     const uri = `${this._baseUrl}${endpoint}`
     const opts = {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36',
+        cookie: 'katsearch=',
       },
-      query
+      query,
     }
 
     this._debug(`Making request to: '${uri}?${stringify(query)}'`)
     return got.get(uri, opts)
       .then(({ body }) => cheerio.load(body))
-      // .then(({ body }) => body)
+    // .then(({ body }) => body)
   }
 
   /**
    * Format the result page in the response object.
    * @param {!Object} $ - The cheerio loaded body.
    * @param {!number} page - The page of the torrent to find.
+   * @param {!Object} filters - Filters filter the torrents on
    * @param {!Date} date - The date the query was started.
    * @returns {Response} - The response of a query.
    */
-  _formatPage($, page, date) {
+  _formatPage($, page, filters, date) {
     const data = $('a.button.button--gray').last().text()
     const hasNext = data.toLowerCase() === 'next'
+    const findLimit = $('.row .justify-content-between').first().text().match(/([0-9]+ limit [0-9],[0-9]+)/)
+
+    const limitText = findLimit.shift()
+    let totalPages = null
+
+    if (limitText) {
+      const limitParts = limitText.split(' ')
+      const pageSize = parseInt(limitParts.shift(), 10)
+      const totalItems = parseInt(limitParts.reverse().shift().replace(',', ''), 10)
+
+      totalPages = parseInt(`${totalItems / pageSize}`, 10)
+    }
 
     const result = {
       responseTime: date,
+      totalPages,
       page,
-      hasNext
+      hasNext,
     }
+
+    // TODO:: Make it possible to filter on these
+    const { verified, language } = filters
 
     const self = this
     result.results = $('table.torrents_table')
       .children('tbody')
       .find('tr')
-      .map(function () {
+      .map(function() {
         const entry = $(this)
 
         const title = entry.find('a.torrents_table__torrent_title > b').text()
@@ -234,14 +184,16 @@ module.exports = class KatApi {
           .last()
           .text()
 
-        const verified = entry.find('i.kf__crown').length > 0
+        const torrentVerified = entry.find('i.kf__crown').length > 0
 
         const comments = parseInt(
-          entry.find('a.button.button--small[title="Comments"]').text(), 10
+          entry.find('a.button.button--small[title="Comments"]').text(), 10,
         )
+
         const torrentLink = entry
           .find('a.button.button--small[title="Torrent magnet link"]')
           .attr('href')
+
         const fileSize = entry.find('td.text--nowrap.text--center')
           .eq(0)
           .text()
@@ -249,28 +201,34 @@ module.exports = class KatApi {
 
         const seeds = parseInt(
           entry.find('td.text--nowrap.text--center.text--success').eq(0).text(),
-          10
+          10,
         )
         const leechs = parseInt(
           entry.find('td.text--nowrap.text--center.text--error').eq(0).text(),
-          10
+          10,
         )
         const peers = seeds + leechs
+
+        if (verified && !torrentVerified) {
+          return false
+        }
 
         return {
           title,
           category,
           link: `${self._baseUrl}/${link}`,
-          verified,
+          verified: torrentVerified,
           comments,
           torrentLink,
           fileSize,
           size,
           seeds,
           leechs,
-          peers
+          peers,
         }
-      }).get()
+      })
+      .filter(Boolean)
+      .get()
 
     return result
   }
@@ -279,35 +237,24 @@ module.exports = class KatApi {
    * Make an advanced search.
    * @param {!Object} config - The config of the advanced query object.
    * @param {!string} [config.category] - The category of the torrents to find.
-   * @param {!string} config.query - The keywords to search for.
+   * @param {!string} [config.subcate] - The sub category of the torrents to find.
    * @param {?number} [config.page=1] - The page of the torrent to find.
+   * @param {?number} [config.verified] - Should the torrent be verified.
    * @param {?number} [config.language] - The language of the torrents to find.
-   * @param {?string} [config.sortBy='id'] - The way to sort the results by.
-   * @param {?string} [config.orderBy='desc'] - The way to order the results by.
    * @param {!Date} date - The date the query was started.
    * @returns {Promise<Resonse, Error>} - The response of an advanced search.
    */
   _getData({
     category,
-    query = '',
+    subcate = null,
     page = 1,
+    verified,
     language,
-    sortBy = 'id',
-    orderBy = 'desc'
   }, date) {
     let err
     if (category && !this._category[category]) {
       err = new Error(`'${category}' is not a valid value for category`)
       return Promise.reject(err)
-    }
-    if (language && !this._lang[language]) {
-      err = new Error(`'${language}' is not a valid value for lang`)
-    }
-    if (sortBy && !this._sort[sortBy]) {
-      err = new Error(`'${sortBy}' is not a valid value for sort`)
-    }
-    if (orderBy && !this._order[orderBy]) {
-      err = new Error(`'${orderBy}' is not a valid value for order`)
     }
 
     if (err) {
@@ -315,16 +262,25 @@ module.exports = class KatApi {
     }
 
     const cat = this._category[category]
-    const lang = this._lang[language]
-    const sort = this._sort[sortBy]
-    const order = this._order[orderBy]
+    const sbcate = subcate ? `/subcate/${this._subcate[subcate]}` : null
 
-    return this._get(`katsearch/page/${page}/${query}`, {
-      cat,
-      lang,
-      sort,
-      order
-    }).then(res => this._formatPage(res, page, Date.now() - date))
+    return this._get(`category/${cat}${sbcate}/page/${page}`)
+      .then(res => this._formatPage(
+        res,
+        page,
+        {
+          verified,
+          language,
+        },
+        Date.now() - date),
+      )
+
+    /* return this._get(`katsearch/page/${page}/${query}`, {
+     cat,
+     lang,
+     sort,
+     order
+     }).then(res => this._formatPage(res, page, Date.now() - date))*/
   }
 
   /**
@@ -338,6 +294,7 @@ module.exports = class KatApi {
 
     if (typeof (query) === 'string') {
       return this._getData({ query }, this.lastRequestTime)
+
     } else if (typeof (query) === 'object') {
       return this._getData(query, this.lastRequestTime)
     }
