@@ -64,6 +64,7 @@ module.exports = class KatApi {
     }
     this._subcate = {
       hd: 'hd',
+      ultrahd: 'ultrahd',
     }
     /**
      * The available languages to search for.
@@ -146,7 +147,7 @@ module.exports = class KatApi {
   _formatPage($, page, filters, date) {
     const data = $('a.button.button--gray').last().text()
     const hasNext = data.toLowerCase() === 'next'
-    const findLimit = $('.row .justify-content-between').first().text().match(/([0-9]+ limit [0-9],[0-9]+)/)
+    const findLimit = $('.row .justify-content-between').first().text().match(/([0-9]+ limit [0-9][,]?[0-9]+)/)
 
     const limitText = findLimit.shift()
     let totalPages = null
@@ -203,6 +204,7 @@ module.exports = class KatApi {
           entry.find('td.text--nowrap.text--center.text--success').eq(0).text(),
           10,
         )
+
         const leechs = parseInt(
           entry.find('td.text--nowrap.text--center.text--error').eq(0).text(),
           10,
