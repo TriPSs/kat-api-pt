@@ -256,7 +256,10 @@ module.exports = class KatApi {
     let err
     if (category && !this._category[category]) {
       err = new Error(`'${category}' is not a valid value for category`)
-      return Promise.reject(err)
+    }
+
+    if (subcate && !this._subcate[subcate]) {
+      err = new Error(`'${subcate}' is not a valid value for subcate`)
     }
 
     if (err) {
@@ -294,10 +297,10 @@ module.exports = class KatApi {
   search(query) {
     this.lastRequestTime = Date.now()
 
-    if (typeof (query) === 'string') {
+    if (typeof query === 'string') {
       return this._getData({ query }, this.lastRequestTime)
 
-    } else if (typeof (query) === 'object') {
+    } else if (typeof query === 'object') {
       return this._getData(query, this.lastRequestTime)
     }
 

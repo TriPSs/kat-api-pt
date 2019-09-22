@@ -10,7 +10,7 @@ kat.search({
   page: 1,
   language: 'en',
   verified: 1,
-  category: 'tv',
+  category: 'movies',
   subcate: 'hd',
-}).then(res => console.log(res))
+}).then(res => console.log(res.results.length))
   .catch(err => console.error(err))
